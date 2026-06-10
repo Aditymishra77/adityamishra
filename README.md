@@ -1,89 +1,130 @@
-# CursorForge IDE
+# Enterprise Full-Stack Starter
 
-CursorForge IDE is a scalable AI-first coding workspace inspired by Cursor-style developer tools. It combines a modern multi-panel code editor, repository-aware AI assistance, autonomous coding agents, live preview workflows, terminal integration, deployment automation, and a plugin-ready architecture.
+Scalable full-stack template with:
 
-## Features
+- **Frontend:** Next.js 14 + App Router
+- **Backend:** Node.js + Express (modular/layered design)
+- **Database:** PostgreSQL
+- **Authentication:** JWT (register, login, protected profile)
 
-- **AI Code Editor** with file explorer, tabs, line numbers, editor canvas, terminal panel, Git entry points, and VS Code-inspired dark styling.
-- **AI Coding Assistant** panel for repository-aware chat, selected-code editing, debugging, explanation, and autonomous prompt dispatch.
-- **Code Generation APIs** for scaffolding projects, files, dependencies, and templates.
-- **Repository Understanding** endpoint with indexing insights, hotspots, and recommendations.
-- **Specialized Agents** for generation, bug fixing, refactoring, testing, documentation, and security scanning.
-- **Live Preview Support** with built-in iframe previews and shareable preview routes for generated apps.
-- **Scalable Modular Architecture** using reusable components and route handlers ready to plug into real model providers and backend services.
+## Architecture
 
-## Tech Stack
+```text
+app/                        # Next.js UI routes and pages
+lib/                        # Shared frontend utilities (API client)
+server/
+  src/
+    config/                 # Environment config
+    modules/
+      auth/                 # Domain module (routes, controller, service, repository, types)
+      accounting/           # Double-entry journals + ledger APIs
+      ops/                  # RBAC notifications, activity logs, audit trails
+      health/
+    shared/
+      db/                   # PostgreSQL pool
+      middlewares/          # auth + error middleware
+      utils/                # JWT helpers
+  database/migrations/      # SQL migrations
+```
 
-- **Frontend:** Next.js 14, React 18, TypeScript
-- **UI:** Custom dashboard layout with Lucide icons
-- **Backend/API:** Next.js Route Handlers (expandable to Node/Express services)
-- **AI Layer:** Ready for OpenAI, Claude, and DeepSeek routing
-- **Data Layer:** Prepared for PostgreSQL + embeddings memory
-- **Realtime:** Ready for WebSockets collaboration
-- **Storage:** Ready for S3-backed project snapshots
+### Backend layering strategy
 
-## Project Structure
+1. **Routes**: map HTTP endpoints to controller methods.
+2. **Controllers**: translate HTTP request/response to service calls.
+3. **Services**: enforce business rules and orchestration.
+4. **Repositories**: isolated data-access operations.
 
-- `app/` – App Router pages, preview routes, global styles, and mock API endpoints
-- `components/` – Modular IDE shell components (sidebar, editor, chat, terminal, overview, preview)
-- `data/` – Mock repository, agent, and UI state used to render the experience
-- `lib/` – Shared helpers
-- `Dockerfile` / `compose.yaml` – Optional local container-based development setup
+This keeps transport, domain logic, and persistence decoupled for enterprise growth.
 
-## API Endpoints
+Role-based access is now supported with `admin`, `manager`, and `staff` roles, plus notification/activity/audit operations endpoints.
 
-- `POST /api/chat` – Returns a repository-aware AI workflow plan
-- `POST /api/generate` – Returns generated folder/file scaffolding metadata
-- `GET /api/repository` – Returns indexing and improvement recommendations
-- `GET /api/templates` – Returns starter template options
-- `GET /api/agents` – Returns available AI agents and orchestration summary
+## API surface
 
-## Local Development
+Base URL: `http://localhost:4000/api/v1`
 
-### Option 1: Run directly with Node.js
+- `GET /health`
+- `POST /auth/register`
+- `POST /auth/login`
+- `GET /auth/me` (Bearer token required)
+- `POST /crm/leads` (create lead + auto-assign salesperson + AI suggestion, Bearer token required)
+- `PATCH /crm/leads/:leadId` (update lead, Bearer token required)
+- `POST /crm/leads/:leadId/convert` (convert lead to customer, Bearer token required)
+- `GET /crm/leads/:leadId/ai-suggestion` (Gemini-powered next-step guidance, Bearer token required)
+- `POST /billing/invoices` (create invoice with GST + auto invoice number + auto accounting journal posting, Bearer token required)
+- `GET /billing/invoices/:invoiceId/pdf` (export invoice PDF, Bearer token required)
+- `POST /inventory/products` (add product, Bearer token required)
+- `POST /inventory/stock/in` (stock-in, Bearer token required)
+- `POST /inventory/stock/out` (stock-out, Bearer token required)
+- `GET /inventory/alerts/low-stock` (low stock alerts, Bearer token required)
+- `POST /accounting/journal-entries` (create balanced journal entries, Bearer token required)
+- `GET /accounting/ledger` (ledger view with running balance, Bearer token required)
+- `GET /ops/notifications` (current user notifications, Bearer token required)
+- `PATCH /ops/notifications/:notificationId/read` (mark notification as read, Bearer token required)
+- `POST /ops/notifications` (admin/manager only)
+- `GET /ops/activity-logs` (admin/manager only)
+- `GET /ops/audit-trails` (admin only)
 
-1. Use **Node.js 20+**.
-2. Copy environment defaults:
+## Quick start
+
+1. Copy env file:
 
    ```bash
    cp .env.example .env.local
    ```
 
-3. Install dependencies:
+2. Install dependencies:
 
    ```bash
    npm install
    ```
 
-4. Start the app on all interfaces for local previewing:
+3. Run frontend + API together:
 
    ```bash
-   npm run dev:host
+   npm run dev:full
    ```
 
-5. Open `http://localhost:3000`.
+4. Ensure PostgreSQL is running locally with credentials from `.env.example`, or use Docker Compose.
 
-### Option 2: Run with Docker Compose
+5. Open:
+   - Frontend: `http://localhost:3000`
+   - API: `http://localhost:4000/api/v1/health`
+
+6. Optional: set `GEMINI_API_KEY` in `.env.local` to enable Gemini-based CRM suggestions.
+
+## Docker Compose
 
 ```bash
 docker compose up --build
 ```
 
-This starts the app at `http://localhost:3000` with your repository mounted into the container for iterative development.
+Compose boots 3 services:
 
-## Preview Support
+- `web` (Next.js)
+- `api` (Express)
+- `db` (PostgreSQL 16)
 
-- The IDE includes built-in preview tabs rendered through an iframe in the lower-right panel.
-- Shareable preview routes are available under:
-  - `/preview/react-app`
-  - `/preview/node-api`
-  - `/preview/ai-app`
-- Use the **Open preview** action from the IDE to launch the active preview route in a new tab.
+Database migration SQL in `server/database/migrations` is mounted into Postgres init.
 
-## Next Expansion Ideas
 
-1. Replace mocked data with Monaco Editor, persistent workspace files, and real terminal sessions.
-2. Connect model adapters for OpenAI, Claude, and DeepSeek with streaming chat responses.
-3. Add PostgreSQL-backed repository memory and vector search for context retrieval.
-4. Implement collaborative cursors and live editing over WebSockets.
-5. Add OAuth/email authentication, Git push/pull flows, and plugin marketplace installation.
+## Enterprise database schema
+
+A complete PostgreSQL relational schema for CRM, Billing, Inventory, Accounting, and Production is included in:
+
+- `server/database/migrations/002_enterprise_domains.sql`
+
+The schema contains:
+
+- core master tables (customers, products, warehouses, chart of accounts, BOMs)
+- operational tables (leads, invoices/payments, stock movements, production orders)
+- accounting journals and posting links to billing/production flows
+- constraints, foreign keys, and indexes for data integrity and query performance
+- reporting views for customer balances and available inventory
+
+## Production hardening checklist
+
+- Move from raw SQL files to a migration tool (Prisma, Knex, or Flyway).
+- Rotate `JWT_SECRET` and store secrets in a vault.
+- Add refresh-token strategy and revocation list.
+- Add request validation (Zod/Joi) and structured logging.
+- Add integration tests (API) + e2e tests (UI).
